@@ -965,7 +965,7 @@ function $HttpProvider() {
 
       // if we won't have the response in cache, send the request to the backend
       if (isUndefined(cachedResp)) {
-        $httpBackend(config.method, url, reqData, done, reqHeaders, config.timeout,
+        $httpBackend(config.method, url, reqData, done, progress, reqHeaders, config.timeout,
             config.withCredentials, config.responseType);
       }
 
@@ -990,6 +990,10 @@ function $HttpProvider() {
 
         resolvePromise(response, status, headersString);
         if (!$rootScope.$$phase) $rootScope.$apply();
+      }
+
+      function progress(event) {
+        deferred.notify(event);
       }
 
 

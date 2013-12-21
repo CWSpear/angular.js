@@ -36,7 +36,7 @@ function createHttpBackend($browser, XHR, $browserDefer, callbacks, rawDocument)
   var ABORTED = -1;
 
   // TODO(vojta): fix the signature
-  return function(method, url, post, callback, headers, timeout, withCredentials, responseType) {
+  return function(method, url, post, doneCallback, progressCallback, headers, timeout, withCredentials, responseType) {
     var status;
     $browser.$$incOutstandingRequestCount();
     url = url || $browser.url();
@@ -50,9 +50,9 @@ function createHttpBackend($browser, XHR, $browserDefer, callbacks, rawDocument)
       var jsonpDone = jsonpReq(url.replace('JSON_CALLBACK', 'angular.callbacks.' + callbackId),
           function() {
         if (callbacks[callbackId].data) {
-          completeRequest(callback, 200, callbacks[callbackId].data);
+          completeRequest(doneCallback, 200, callbacks[callbackId].data);
         } else {
-          completeRequest(callback, status || -2);
+          completeRequest(doneCallback, status || -2);
         }
         delete callbacks[callbackId];
       });
@@ -80,7 +80,7 @@ function createHttpBackend($browser, XHR, $browserDefer, callbacks, rawDocument)
 
           // responseText is the old-school way of retrieving response (supported by IE8 & 9)
           // response/responseType properties were introduced in XHR Level2 spec (supported by IE10)
-          completeRequest(callback,
+          completeRequest(doneCallback,
               status || xhr.status,
               response,
               responseHeaders);
@@ -94,6 +94,10 @@ function createHttpBackend($browser, XHR, $browserDefer, callbacks, rawDocument)
       if (responseType) {
         xhr.responseType = responseType;
       }
+
+      if (xhr.upload) xhr.upload.addEventListener('progress', function (event) {
+        if (typeof progressCallback === 'function') progressCallback(event);
+      });
 
       xhr.send(post || null);
     }
